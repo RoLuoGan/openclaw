@@ -588,23 +588,21 @@ export async function startGatewayServer(
       runtimeState.mediaCleanup = earlyRuntime.maintenance.mediaCleanup;
     }
 
-    Object.assign(
-      runtimeState,
-      startGatewayEventSubscriptions({
-        minimalTestGateway,
-        broadcast,
-        broadcastToConnIds,
-        nodeSendToSession,
-        agentRunSeq,
-        chatRunState,
-        resolveSessionKeyForRun,
-        clearAgentRunContext,
-        toolEventRecipients,
-        sessionEventSubscribers,
-        sessionMessageSubscribers,
-        chatAbortControllers,
-      }),
-    );
+    const eventSubs = startGatewayEventSubscriptions({
+      minimalTestGateway,
+      broadcast,
+      broadcastToConnIds,
+      nodeSendToSession,
+      agentRunSeq,
+      chatRunState,
+      resolveSessionKeyForRun,
+      clearAgentRunContext,
+      toolEventRecipients,
+      sessionEventSubscribers,
+      sessionMessageSubscribers,
+      chatAbortControllers,
+    });
+    Object.assign(runtimeState, eventSubs);
 
     Object.assign(
       runtimeState,
@@ -688,6 +686,7 @@ export async function startGatewayServer(
       wizardRunner,
       broadcastVoiceWakeChanged,
       unavailableGatewayMethods,
+      clearPendingChatLifecycleError: eventSubs.clearPendingChatLifecycleError,
     });
 
     setFallbackGatewayContextResolver(() => gatewayRequestContext);
