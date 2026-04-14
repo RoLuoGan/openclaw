@@ -33,22 +33,20 @@ export function startGatewayEventSubscriptions(params: {
   sessionMessageSubscribers: SessionMessageSubscriberRegistry;
   chatAbortControllers: Map<string, unknown>;
 }) {
-  const agentUnsub = params.minimalTestGateway
-    ? null
-    : onAgentEvent(
-        createAgentEventHandler({
-          broadcast: params.broadcast,
-          broadcastToConnIds: params.broadcastToConnIds,
-          nodeSendToSession: params.nodeSendToSession,
-          agentRunSeq: params.agentRunSeq,
-          chatRunState: params.chatRunState,
-          resolveSessionKeyForRun: params.resolveSessionKeyForRun,
-          clearAgentRunContext: params.clearAgentRunContext,
-          toolEventRecipients: params.toolEventRecipients,
-          sessionEventSubscribers: params.sessionEventSubscribers,
-          isChatSendRunActive: (runId) => params.chatAbortControllers.has(runId),
-        }),
-      );
+  const { handler: agentEventHandler, clearPendingChatLifecycleError } =
+    createAgentEventHandler({
+      broadcast: params.broadcast,
+      broadcastToConnIds: params.broadcastToConnIds,
+      nodeSendToSession: params.nodeSendToSession,
+      agentRunSeq: params.agentRunSeq,
+      chatRunState: params.chatRunState,
+      resolveSessionKeyForRun: params.resolveSessionKeyForRun,
+      clearAgentRunContext: params.clearAgentRunContext,
+      toolEventRecipients: params.toolEventRecipients,
+      sessionEventSubscribers: params.sessionEventSubscribers,
+      isChatSendRunActive: (runId) => params.chatAbortControllers.has(runId),
+    });
+  const agentUnsub = params.minimalTestGateway ? null : onAgentEvent(agentEventHandler);
 
   const heartbeatUnsub = params.minimalTestGateway
     ? null
@@ -80,5 +78,7 @@ export function startGatewayEventSubscriptions(params: {
     heartbeatUnsub,
     transcriptUnsub,
     lifecycleUnsub,
+    clearPendingChatLifecycleError,
   };
 }
+
