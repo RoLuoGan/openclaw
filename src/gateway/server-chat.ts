@@ -231,6 +231,8 @@ export function createChatRunState(): ChatRunState {
     abortedRuns,
     clear,
   };
+
+  return { handler, clearPendingChatLifecycleError };
 }
 
 export type ToolEventRecipientRegistry = {
@@ -674,13 +676,7 @@ export function createAgentEventHandler({
     const delayMs = Math.max(1, Math.min(Math.floor(lifecycleErrorRetryGraceMs), 2_147_483_647));
     const timer = setTimeout(() => {
       pendingTerminalLifecycleErrors.delete(evt.runId);
-      // Re-evaluate skipChatErrorFinal at fire time rather than using the stale
-      // captured value. When chat.send's surface_error path resolves normally
-      // (no throw), .finally() deletes the run from chatAbortControllers before
-      // this timer fires, so isChatSendRunActive returns false and we must emit
-      // the lifecycle error chat event ourselves to unblock the Web UI.
-      const resolvedSkip = opts?.skipChatErrorFinal ? isChatSendRunActive(evt.runId) : false;
-      finalizeLifecycleEvent(evt, { ...opts, skipChatErrorFinal: resolvedSkip });
+      finalizeLifecycleEvent(evt, opts);
     }, delayMs);
     timer.unref?.();
     pendingTerminalLifecycleErrors.set(evt.runId, timer);
@@ -883,7 +879,11 @@ export function createAgentEventHandler({
     }
   };
 
-  return (evt: AgentEventPayload) => {
+  const clearPendingChatLifecycleError = (runId: string) => {
+    clearPendingTerminalLifecycleError(runId);
+  };
+
+  const handler = (evt: AgentEventPayload) => {
     const lifecyclePhase =
       evt.stream === "lifecycle" && typeof evt.data?.phase === "string" ? evt.data.phase : null;
     if (evt.stream !== "lifecycle" || lifecyclePhase !== "error") {
@@ -1027,4 +1027,5 @@ export function createAgentEventHandler({
     }
   };
 }
+
 
